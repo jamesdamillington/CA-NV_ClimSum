@@ -4,8 +4,6 @@ library(raster)
 library(tidyverse)
 library(ncdf4)
 
-ncyear <- 2000
-
 url <- "http://albers.cnr.berkeley.edu/data/noaa/livneh/CA_NV/"  
 dir <- "C:/Users/k1076631/Google Drive/Teaching/2018-19/Undergrad/IGS/Patrick/CA-NV_ClimSum/"
 fp <- "livneh_CA_NV_15Oct2014."
@@ -19,8 +17,7 @@ download_nc <- function(url, dir, fileprefix, year, month)
 
 delete_year <- function(dir, fileprefix, year, month)
 {
-  print(paste0(dir,"CANV",create_yrmon(year,month),".nc"))
-  unlink(paste0(dir,"CANV",create_yrmon(year,month),".nc"),force=TRUE)
+  file.remove(paste0(dir,"CANV",create_yrmon(year,month),".nc"),force=TRUE)
 }
 
 create_yrmon <- function(year,mon)
@@ -30,7 +27,6 @@ create_yrmon <- function(year,mon)
     return(paste0(year,sprintf("%02d",mon)))
   )
 }
-
 
 nc_raster <- function(filename)
 {
@@ -50,11 +46,11 @@ nc_raster <- function(filename)
   return(r)
 }
 
-
-mons <- seq(1,12,1)
+#start here, new year
 year <- 2002
-  
-for(i in mons)
+
+#download data for this year
+for(i in seq(1,12,1))
 {
   download_nc(url, dir, fp, year, i)
 }
@@ -62,7 +58,6 @@ for(i in mons)
 #create winter brick
 winter <- stack()
 win <- c(11, 12, seq(1,4,1))
-  
 for(j in win)
 {
  print(create_yrmon(year, j))  
@@ -70,15 +65,10 @@ for(j in win)
  winter <- stack(winter,r)
 }
 names(winter) <- c("Nov","Dec","Jan","Feb","Mar","Apr")
-plot(winter)
-
-wintersum <- stackApply(winter,indices=rep.int(1,6),fun=sum,na.rm=FALSE)
-plot(wintersum)
 
 #create summer brick
 summer <- stack()
 summ <- c(seq(5,10,1))
-  
 for(j in summ)
 {
  print(create_yrmon(year, j))  
@@ -86,21 +76,21 @@ for(j in summ)
  summer <- stack(summer,r)
 }
 names(summer) <- c("May","Jun","Jul","Aug","Sep","Oct")
-plot(summer)
 
+#sum bricks
+wintersum <- stackApply(winter,indices=rep.int(1,6),fun=sum,na.rm=FALSE)
 summersum <- stackApply(summer,indices=rep.int(1,6),fun=sum,na.rm=FALSE)
-plot(summersum)  
 
 #calc sasonality
 seasonality <- wintersum - summersum
-plot(seasonality)
 
-writeRaster(seasonality, paste0(dir,"pptnSeasonality_",year,".asc"),format="ascii")
-writeRaster(wintersum, paste0(dir,"pptnWinter_Sum_",year,".asc"),format="ascii")
-writeRaster(summersum, paste0(dir,"pptnSummer_Sum_",year,".asc"),format="ascii")
+#write files
+writeRaster(seasonality, paste0(dir,"pptnSeasonality_",year,".asc"),format="ascii",overwite=TRUE)
+writeRaster(wintersum, paste0(dir,"pptnWinter_Sum_",year,".asc"),format="ascii",overwite=TRUE)
+writeRaster(summersum, paste0(dir,"pptnSummer_Sum_",year,".asc"),format="ascii",overwite=TRUE)
   
-
-for(i in mons)
+#delete nc files
+for(i in seq(1,12,1))
 {
   delete_year(dir, fp, year, i)
 }
