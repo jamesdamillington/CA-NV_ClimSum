@@ -48,46 +48,49 @@ nc_raster <- function(filename)
   return(r)
 }
 
-#script starts here, new year (add loop to work through mutiple years later)
-year <- 2002
+#loop to work through mutiple years
+years <- seq(1971,2010,1)
 
-#download data for this year
-for(i in seq(1,12,1))
+for(year in years)
 {
-  download_nc(url, dir, fp, year, i)
+  #download data for this year
+  for(i in seq(1,12,1))
+  {
+    download_nc(url, dir, fp, year, i)
+  }
+  
+  #create winter brick (six months)
+  winter <- stack()
+  win <- c(11, 12, seq(1,4,1))
+  for(j in win)
+  {
+   r <- nc_raster(paste0(dir,"Data/CANV", create_yrmon(year, j),".nc"))
+   winter <- stack(winter,r)
+  }
+  names(winter) <- c("Nov","Dec","Jan","Feb","Mar","Apr")
+  
+  #create summer brick (six months)
+  summer <- stack()
+  summ <- c(seq(5,10,1))
+  for(j in summ)
+  {
+   r <- nc_raster(paste0(dir,"Data/CANV", create_yrmon(year, j),".nc"))
+   summer <- stack(summer,r)
+  }
+  names(summer) <- c("May","Jun","Jul","Aug","Sep","Oct")
+  
+  #sum values (to get total pptn) in thebricks
+  wintersum <- stackApply(winter,indices=rep.int(1,6),fun=sum,na.rm=FALSE)
+  summersum <- stackApply(summer,indices=rep.int(1,6),fun=sum,na.rm=FALSE)
+  
+  #calc sasonality (total winter pptn minus total summer pptn) 
+  seasonality <- wintersum - summersum
+  
+  #write files to disk
+  writeRaster(seasonality, paste0(dir,"pptnSeasonality_",year,".asc"),format="ascii",overwrite=TRUE)
+  writeRaster(wintersum, paste0(dir,"pptnWinter_Sum_",year,".asc"),format="ascii",overwrite=TRUE)
+  writeRaster(summersum, paste0(dir,"pptnSummer_Sum_",year,".asc"),format="ascii",overwrite=TRUE)
+  
+  print(paste0(year," complete."))
 }
-
-#create winter brick (six months)
-winter <- stack()
-win <- c(11, 12, seq(1,4,1))
-for(j in win)
-{
- r <- nc_raster(paste0(dir,"Data/CANV", create_yrmon(year, j),".nc"))
- winter <- stack(winter,r)
-}
-names(winter) <- c("Nov","Dec","Jan","Feb","Mar","Apr")
-
-#create summer brick (six months)
-summer <- stack()
-summ <- c(seq(5,10,1))
-for(j in summ)
-{
- print(create_yrmon(year, j))  
- r <- nc_raster(paste0(dir,"Data/CANV", create_yrmon(year, j),".nc"))
- summer <- stack(summer,r)
-}
-names(summer) <- c("May","Jun","Jul","Aug","Sep","Oct")
-
-#sum values (to get total pptn) in thebricks
-wintersum <- stackApply(winter,indices=rep.int(1,6),fun=sum,na.rm=FALSE)
-summersum <- stackApply(summer,indices=rep.int(1,6),fun=sum,na.rm=FALSE)
-
-#calc sasonality (total winter pptn minus total summer pptn) 
-seasonality <- wintersum - summersum
-
-#write files to disk
-writeRaster(seasonality, paste0(dir,"pptnSeasonality_",year,".asc"),format="ascii",overwrite=TRUE)
-writeRaster(wintersum, paste0(dir,"pptnWinter_Sum_",year,".asc"),format="ascii",overwrite=TRUE)
-writeRaster(summersum, paste0(dir,"pptnSummer_Sum_",year,".asc"),format="ascii",overwrite=TRUE)
-
 
