@@ -15,14 +15,8 @@ fp <- "livneh_CA_NV_15Oct2014."
 download_nc <- function(url, dir, fileprefix, year, month)
 {
   link <- paste0(url,fileprefix,create_yrmon(year,month),".nc")
-  dest <- paste0(dir,"CANV",create_yrmon(year,month),".nc")
+  dest <- paste0(dir,"Data/CANV",create_yrmon(year,month),".nc")
   download.file(url=link,destfile=dest,mode="wb") 
-}
-
-#function to delete nc file 
-delete_year <- function(dir, fileprefix, year, month)
-{
-  unlink(paste0(dir,"CANV",create_yrmon(year,month),".nc"),force=TRUE)
 }
 
 #function to create year month text string for files
@@ -68,11 +62,10 @@ winter <- stack()
 win <- c(11, 12, seq(1,4,1))
 for(j in win)
 {
- r <- nc_raster(paste0(dir,"CANV", create_yrmon(year, j),".nc"))
+ r <- nc_raster(paste0(dir,"Data/CANV", create_yrmon(year, j),".nc"))
  winter <- stack(winter,r)
 }
 names(winter) <- c("Nov","Dec","Jan","Feb","Mar","Apr")
-
 
 #create summer brick (six months)
 summer <- stack()
@@ -80,7 +73,7 @@ summ <- c(seq(5,10,1))
 for(j in summ)
 {
  print(create_yrmon(year, j))  
- r <- nc_raster(paste0(dir,"CANV", create_yrmon(year, j),".nc"))
+ r <- nc_raster(paste0(dir,"Data/CANV", create_yrmon(year, j),".nc"))
  summer <- stack(summer,r)
 }
 names(summer) <- c("May","Jun","Jul","Aug","Sep","Oct")
@@ -97,18 +90,4 @@ writeRaster(seasonality, paste0(dir,"pptnSeasonality_",year,".asc"),format="asci
 writeRaster(wintersum, paste0(dir,"pptnWinter_Sum_",year,".asc"),format="ascii",overwrite=TRUE)
 writeRaster(summersum, paste0(dir,"pptnSummer_Sum_",year,".asc"),format="ascii",overwrite=TRUE)
 
-#clean up - currently unlinking files does not work as still being accessed by R
-# rm(wintersum)
-# rm(summersum)
-# rm(r)
-# rm(summer)
-# rm(winter)
-# rm(seasonality)
-#   
-# #delete nc files
-# for(i in seq(1,12,1))
-# {
-#   delete_year(dir, fp, year, i)
-# }
-# 
 
